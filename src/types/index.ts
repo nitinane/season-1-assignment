@@ -13,8 +13,11 @@ export interface JobRole {
   title: string;
   required_skills: string[];
   preferred_tools: string[];
-  experience_level: string;
+  experience_level?: string;
+  experience_range?: string;
+  location?: string;
   description: string;
+  status: string;
   candidate_count?: number;
   shortlisted_count?: number;
   created_at: string;

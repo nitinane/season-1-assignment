@@ -25,11 +25,32 @@ export const candidateService = {
   },
 
   /**
-   * Inserts a new candidate into the database.
+   * Inserts or Updates a candidate in the database.
+   * Returns whether it was a 'new' insert or an 'update' (duplicate detected).
    */
-  async createCandidate(candidate: Omit<Candidate, 'id' | 'created_at'>) {
+  async createCandidate(candidate: Omit<Candidate, 'id' | 'created_at'>): Promise<{ data: Candidate; isDuplicate: boolean }> {
     const hr_user_id = await getCurrentUser();
     
+    // Check for duplicate by email for this HR User
+    const { data: existing } = await supabase
+      .from('candidates')
+      .select('id')
+      .eq('email', candidate.email)
+      .eq('hr_user_id', hr_user_id)
+      .maybeSingle();
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from('candidates')
+        .update({ ...candidate })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return { data: data as Candidate, isDuplicate: true };
+    }
+
     const { data, error } = await supabase
       .from('candidates')
       .insert([{
@@ -40,7 +61,7 @@ export const candidateService = {
       .single();
 
     if (error) throw error;
-    return data as Candidate;
+    return { data: data as Candidate, isDuplicate: false };
   },
 
   /**

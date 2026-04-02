@@ -48,6 +48,7 @@ function JobForm({ onSuccess }: { onSuccess: () => void }) {
         experience_level: expLevel,
         required_skills: skills,
         preferred_tools: tools,
+        status: 'active'
       }).select().single();
 
       if (error) throw error;
@@ -60,7 +61,7 @@ function JobForm({ onSuccess }: { onSuccess: () => void }) {
       if (msg.includes('relation') || msg.includes('fetch')) {
         toast.error('Connect Supabase to save (see .env.example)');
         // Still add locally for demo
-        addJob({ id: crypto.randomUUID(), hr_user_id: user?.id || '', title, description, experience_level: expLevel, required_skills: skills, preferred_tools: tools, created_at: new Date().toISOString() });
+        addJob({ id: crypto.randomUUID(), hr_user_id: user?.id || '', title, description, experience_level: expLevel, required_skills: skills, preferred_tools: tools, status: 'active', created_at: new Date().toISOString() });
         onSuccess();
       } else {
         toast.error(msg);

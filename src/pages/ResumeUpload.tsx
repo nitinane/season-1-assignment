@@ -171,7 +171,7 @@ export default function ResumeUpload() {
             keywords: parsedData.keywords || [],
           } as any);
 
-          console.log("Candidate inserted successfully into DB.");
+          console.log("Candidate processed successfully.");
           updateFileStatus(fState.id, 'done', 100);
           successCount++;
 
