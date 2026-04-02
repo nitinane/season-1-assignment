@@ -98,7 +98,9 @@ JSON Schema (Array of Objects):
         },
         {
           role: 'user',
-          content: `JOB ROLE: ${job.title || "Unknown Role"}\nJD Summary: ${job.description || "No description provided"}\nRequired Skills: ${(job.required_skills || []).join(", ")}\n\nCandidates dossier:\n${dossier}`,
+          content: `JOB ROLE: ${job.title || "Unknown Role"}\nJD Summary: ${job.description || "No description provided"}\nRequired Skills: ${
+            (Array.isArray(job.required_skills) ? job.required_skills : (typeof job.required_skills === 'string' ? job.required_skills.split(',') : [])).join(", ")
+          }\n\nCandidates dossier:\n${dossier}`,
         },
       ],
       temperature: 0.1,

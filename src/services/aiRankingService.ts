@@ -52,6 +52,17 @@ export const getBenchmarksForRole = (title: string): string[] => {
   ];
 };
 
+const normalizeToArray = (value: any): string[] => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
 export const aiRankingService = {
   /**
    * Orchestrates the full AI ranking pipeline for a specific job role.
@@ -69,6 +80,11 @@ export const aiRankingService = {
       .single();
     
     if (jobErr || !job) throw new Error('Job role not found or access denied');
+
+    // 🛡️ NORMALIZE JOB FIELDS
+    const requiredSkills = normalizeToArray(job.required_skills);
+    const preferredTools = normalizeToArray(job.preferred_tools);
+    const normalizedJob = { ...job, required_skills: requiredSkills, preferred_tools: preferredTools };
 
     // 2. Fetch all candidates for this HR user (or specifically for this job if tagged)
     // Note: Candidates aren't technically linked to jobs in the candidates table, 
@@ -96,7 +112,7 @@ export const aiRankingService = {
     let aiResults: any[] = [];
     
     try {
-      aiResults = await bulkScoreCandidates(batchCandidates, job);
+      aiResults = await bulkScoreCandidates(batchCandidates, normalizedJob);
     } catch (err) {
       console.error("Critical AI Ranking Error:", err);
     }
@@ -104,17 +120,17 @@ export const aiRankingService = {
     // 🌟 FALLBACK SYSTEM: If AI fails, use Heuristic Skills matching
     if (!aiResults || aiResults.length === 0) {
       console.warn("AI Ranking failed or returned empty. Using Heuristic Fallback.");
-      const requiredSkills = (job.required_skills || []).map((s: string) => s.toLowerCase());
+      const lowerRequiredSkills = requiredSkills.map((s: string) => s.toLowerCase());
       
       aiResults = batchCandidates.map((c, index) => {
         const candidateSkills = (c.summary + " " + c.rawText).toLowerCase();
         let matchCount = 0;
-        requiredSkills.forEach((s: string) => {
+        lowerRequiredSkills.forEach((s: string) => {
           if (candidateSkills.includes(s)) matchCount++;
         });
 
-        const score = requiredSkills.length > 0 
-          ? Math.min(90, Math.round((matchCount / requiredSkills.length) * 100))
+        const score = lowerRequiredSkills.length > 0 
+          ? Math.min(90, Math.round((matchCount / lowerRequiredSkills.length) * 100))
           : 50;
 
         return {
