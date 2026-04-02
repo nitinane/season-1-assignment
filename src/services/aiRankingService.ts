@@ -139,7 +139,7 @@ export const aiRankingService = {
       .eq('hr_user_id', hr_user_id);
 
     // 6. Save top 10 results
-    const resultsToSave = aiResults.map((res, index) => {
+    const resultsToSave = aiResults.slice(0, 10).map((res, index) => {
       const originalCandidate = allCandidates.find(c => c.name === res.name || c.email === res.email);
       return {
         hr_user_id,

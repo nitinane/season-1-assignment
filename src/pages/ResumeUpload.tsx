@@ -86,13 +86,17 @@ export default function ResumeUpload() {
     }
 
     setIsProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+    let emptyCount = 0;
 
     try {
       // 1. Pre-process ZIP files into individual files
       const finalFileList: FileState[] = [];
       for (const fState of files) {
         if (fState.file.name.endsWith('.zip')) {
-          updateFileStatus(fState.id, 'uploading', 50); // Just a flicker for ZIP processing
+          updateFileStatus(fState.id, 'uploading', 50);
+          console.log("Expanding ZIP archive:", fState.file.name);
           const extracted = await candidateService.processZipFile(fState.file);
           const newStates: FileState[] = extracted.map(f => ({
             file: f,
@@ -106,27 +110,51 @@ export default function ResumeUpload() {
         }
       }
 
-      // Update the main files list if it changed (due to ZIPs)
       setFiles(finalFileList);
 
       for (const fState of finalFileList) {
-        if (fState.status === 'done') continue;
+        if (fState.status === 'done') {
+          successCount++;
+          continue;
+        }
 
         try {
+          console.log("--- Processing file:", fState.file.name, `(${fState.file.size} bytes) ---`);
+
+          // 🛡️ MANDATORY: Validate File Size
+          if (!fState.file || fState.file.size === 0) {
+            console.error("Invalid file: Empty (0 bytes)");
+            updateFileStatus(fState.id, 'error', 0, 'Empty file rejected');
+            emptyCount++;
+            continue;
+          }
+
           // STEP 1: Uploading
-          updateFileStatus(fState.id, 'uploading', 30);
+          updateFileStatus(fState.id, 'uploading', 20);
           const resumeUrl = await candidateService.uploadResume(fState.file, fState.file.name);
+          console.log("File uploaded successfully:", resumeUrl);
           
-          // STEP 2: Parsing
-          updateFileStatus(fState.id, 'parsing', 60);
+          // STEP 2: Parsing (Text Extraction)
+          updateFileStatus(fState.id, 'parsing', 40);
           const rawText = await parseResume(fState.file, fState.file.type, fState.file.name);
-          const parsedData = await extractResumeData(rawText);
           
-          // STEP 3: Analyzing (Database creation)
+          // 🛡️ MANDATORY: Validate Extracted Text
+          if (!rawText || rawText.trim().length < 20) {
+            console.error("PDF text extraction failed: No readable text found.");
+            throw new Error("PDF text extraction failed (empty or corrupt)");
+          }
+          console.log("Text extraction complete. Character count:", rawText.length);
+
+          // STEP 3: AI Data Extraction
+          updateFileStatus(fState.id, 'parsing', 70);
+          const parsedData = await extractResumeData(rawText);
+          console.log("AI parsing complete:", parsedData.name || "Unknown");
+          
+          // STEP 4: Database Insert (Analyzing)
           updateFileStatus(fState.id, 'analyzing', 90);
           await candidateService.createCandidate({
             name: parsedData.name || fState.file.name.split('.')[0],
-            email: parsedData.email || 'unknown@example.com',
+            email: parsedData.email || `${fState.file.name.split('.')[0]}@example.com`,
             phone: parsedData.phone || '',
             score: parsedData.score || 0,
             summary: parsedData.summary || '',
@@ -143,32 +171,40 @@ export default function ResumeUpload() {
             keywords: parsedData.keywords || [],
           } as any);
 
+          console.log("Candidate inserted successfully into DB.");
           updateFileStatus(fState.id, 'done', 100);
-        } catch (err) {
-          console.error(`Error processing ${fState.file.name}:`, err);
-          updateFileStatus(fState.id, 'error', 0, 'Processing failed');
+          successCount++;
+
+        } catch (err: any) {
+          console.error(`Error processing ${fState.file.name}:`, err.message);
+          updateFileStatus(fState.id, 'error', 0, err.message || 'Processing failed');
+          failCount++;
         }
       }
-
-      const successCount = finalFileList.filter(f => f.status === 'done').length;
       
       if (successCount > 0) {
-        toast.loading('Initializing AI Ranking Engine...', { duration: 3000 });
-        // 4. Trigger Automatic AI Ranking Pipeline
-        await aiRankingService.processRankingPipeline(selectedRole);
-        toast.success(`Successfully processed and ranked ${successCount} candidates!`);
+        toast.loading(`Ranking ${successCount} candidates...`, { duration: 2000 });
         
-        // Auto-navigate to shortlist after a short delay
+        // 🔮 Trigger Pipeline
+        await aiRankingService.processRankingPipeline(selectedRole);
+        
+        toast.success(
+          `${successCount} successful | ${failCount} failed | ${emptyCount} empty files rejected.`, 
+          { duration: 5000 }
+        );
+        
+        // 🔥 Immediate Navigation
         setTimeout(() => {
           navigate(`/shortlist?role=${selectedRole}`);
-        }, 1000);
+        }, 800);
+
       } else {
-        toast.error('No resumes were successfully processed.');
+        toast.error(`Processing failed: ${failCount} errors, ${emptyCount} empty files.`);
       }
 
     } catch (error) {
-      console.error('Batch upload failed:', error);
-      toast.error('Critical error during batch processing');
+      console.error('Batch upload error:', error);
+      toast.error('Critical batch processing failure');
     } finally {
       setIsProcessing(false);
     }
@@ -376,13 +412,13 @@ export default function ResumeUpload() {
                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Global Progress Indicator</p>
                     </div>
                     <span className="text-brand-400 font-black text-xl">
-                      {Math.round((files.filter(f => f.status === 'done').length / files.length) * 100)}%
+                      {files.length > 0 ? Math.round((files.filter(f => f.status === 'done').length / files.length) * 100) : 0}%
                     </span>
                   </div>
                   <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-brand-400 to-brand-300 transition-all duration-1000 ease-out"
-                      style={{ width: `${(files.filter(f => f.status === 'done' || f.status === 'parsing' || f.status === 'analyzing').length / files.length) * 100}%` }}
+                      style={{ width: `${files.length > 0 ? (files.filter(f => f.status === 'done' || f.status === 'parsing' || f.status === 'analyzing').length / files.length) * 100 : 0}%` }}
                     />
                   </div>
                 </div>

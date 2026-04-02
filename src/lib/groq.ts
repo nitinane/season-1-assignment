@@ -239,11 +239,33 @@ Be thorough. Extract as much data as possible. Fill raw_text with the input text
       const content = completion.choices[0].message.content || '{}';
       const parsed = JSON.parse(content);
       return {
-        ...parsed,
-        raw_text: rawText // Ensure raw_text is always preserved
+        name: parsed.name || "Unknown Candidate",
+        email: parsed.email || "",
+        phone: parsed.phone || "",
+        summary: parsed.summary || "",
+        skills: parsed.skills || [],
+        projects: parsed.projects || [],
+        years_experience: String(parsed.years_experience || ""),
+        education: parsed.education || "",
+        certifications: parsed.certifications || [],
+        companies: parsed.companies || [],
+        tech_stack: parsed.tech_stack || [],
+        keywords: parsed.keywords || [],
+        raw_text: rawText 
       };
-    } catch {
-      return { raw_text: rawText };
+    } catch (err) {
+      console.error("AI Data Extraction failed, using safe defaults:", err);
+      return { 
+        name: "Unknown Candidate",
+        raw_text: rawText,
+        email: "",
+        phone: "",
+        summary: "",
+        skills: [],
+        tech_stack: [],
+        projects: [],
+        years_experience: ""
+      };
     }
   });
 }
