@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Mail, Loader2, AlertTriangle, Copy, CheckCircle,
-  ChevronDown, ChevronUp, Send, Shield, Brain,
+  ChevronDown, ChevronUp, Send, Brain,
   MessageSquare, Zap, RefreshCw
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';

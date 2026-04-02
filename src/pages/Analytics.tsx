@@ -262,7 +262,7 @@ export default function Analytics() {
                   cy={96} 
                   outerRadius={80} 
                   dataKey="value" 
-                  label={({ name, percent }: { name: string; percent?: number }) => `${name} ${Math.round((percent ?? 0) * 100)}%`} 
+                  label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${Math.round((percent ?? 0) * 100)}%`} 
                   labelLine={false}
                 >
                   {data.experiencePie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
