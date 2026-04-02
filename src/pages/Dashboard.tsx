@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, CheckCircle, XCircle, AlertTriangle, Target, Briefcase, 
-  Activity, Plus, ArrowRight, Mail, Zap, ShieldCheck, 
-  Loader2, Send, Copy, Search
+  Users, CheckCircle, XCircle, AlertTriangle, Briefcase, 
+  Plus, ArrowRight, Mail, Zap, ShieldCheck, 
+  Loader2, Send, Copy, Search, Award
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, CartesianGrid, Tooltip, 
@@ -21,6 +21,7 @@ import type { JobRole, ShortlistedCandidate } from '../types';
 
 export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'overview' | 'workflow'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'pipeline'>('overview');
   const [step, setStep] = useState(1);
   const [activeJob, setActiveJob] = useState<JobRole | null>(null);
   const [isRanking, setIsRanking] = useState(false);
@@ -77,11 +78,13 @@ export default function Dashboard() {
       const avg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
 
       const timeline = [
-        { date: 'Mon', applications: 12 },
-        { date: 'Tue', applications: 18 },
-        { date: 'Wed', applications: 15 },
-        { date: 'Thu', applications: 25 },
-        { date: 'Fri', applications: 30 },
+        { date: 'Mar 4', applications: 2 },
+        { date: 'Mar 9', applications: 2 },
+        { date: 'Mar 14', applications: 2 },
+        { date: 'Mar 19', applications: 2 },
+        { date: 'Mar 24', applications: 2 },
+        { date: 'Mar 29', applications: 5 },
+        { date: 'Today', applications: 42 },
       ];
 
       const skillMap: Record<string, number> = {};
@@ -198,38 +201,103 @@ export default function Dashboard() {
 
   const renderOverview = () => {
     return (
-      <div className="space-y-12 py-10 animate-in fade-in duration-1000">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-white/5 pb-10">
-          <div><h1 className="text-4xl font-black text-white tracking-tighter uppercase">Command Center</h1><p className="text-white/40 font-bold uppercase tracking-widest text-[10px] mt-1">Operational Analytics Overlay</p></div>
-          <button onClick={() => { setViewMode('workflow'); setStep(1); }} className="bg-brand-400 hover:bg-brand-300 text-slate-950 px-8 py-5 rounded-3xl font-black flex items-center gap-4 transition-all shadow-2xl shadow-brand-400/20 active:scale-95 uppercase tracking-[0.2em] text-[10px]"><Plus className="h-4 w-4" /> Initialize Deployment</button>
+      <div className="space-y-10 py-10 animate-in fade-in duration-700">
+        <div className="flex flex-col md:flex-row items-end justify-between gap-6">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-bold text-white tracking-tight">Analytics</h1>
+            <p className="text-white/40 font-medium">Data-driven insights into your recruitment pipeline.</p>
+          </div>
+          <button onClick={() => { setViewMode('workflow'); setStep(1); }} className="p-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white active:scale-95 shadow-xl">
+            <Plus className="h-5 w-5" />
+          </button>
         </div>
+
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-6">
           {[
-            { label: 'Pool', value: stats.total, icon: Users, color: 'text-blue-400', bg: 'bg-blue-400/5' },
-            { label: 'Validated', value: stats.shortlisted, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/5' },
-            { label: 'Dismissed', value: stats.rejected, icon: XCircle, color: 'text-pink-400', bg: 'bg-pink-400/5' },
-            { label: 'Redundant', value: stats.duplicates, icon: Copy, color: 'text-orange-400', bg: 'bg-orange-400/5' },
-            { label: 'Anomalies', value: stats.frauds, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-400/5' },
-            { label: 'Efficiency', value: `${stats.avgScore}%`, icon: Target, color: 'text-brand-400', bg: 'bg-brand-400/5' },
+            { label: 'Total', value: stats.total, icon: Users, accent: 'border-blue-500/20', iconColor: 'text-blue-400' },
+            { label: 'Shortlisted', value: stats.shortlisted, icon: CheckCircle, accent: 'border-emerald-500/20', iconColor: 'text-emerald-400' },
+            { label: 'Rejected', value: stats.rejected, icon: XCircle, accent: 'border-rose-500/20', iconColor: 'text-rose-400' },
+            { label: 'Duplicates', value: stats.duplicates, icon: Copy, accent: 'border-amber-500/20', iconColor: 'text-amber-400' },
+            { label: 'Fraud Flags', value: stats.frauds, icon: AlertTriangle, accent: 'border-orange-500/20', iconColor: 'text-orange-400' },
+            { label: 'Avg Score', value: stats.avgScore, icon: Award, accent: 'border-indigo-500/20', iconColor: 'text-indigo-400' },
           ].map((kpi, i) => (
-            <div key={i} className="bg-slate-900/30 border border-white/5 rounded-[2.5rem] p-8 flex flex-col gap-6 hover:border-brand-400/20 transition-all group overflow-hidden">
-              <div className={`h-12 w-12 rounded-2xl ${kpi.bg} flex items-center justify-center ${kpi.color}`}><kpi.icon className="h-6 w-6" /></div>
-              <div><span className="text-3xl font-black text-white block tracking-tighter mb-1">{loadingStats ? '...' : kpi.value}</span><span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] leading-none">{kpi.label}</span></div>
+            <div key={i} className={`bg-[#121421] border ${kpi.accent} rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden group hover:scale-[1.02] transition-all`}>
+              <div className={kpi.iconColor}><kpi.icon className="h-5 w-5" /></div>
+              <div>
+                <span className="text-3xl font-bold text-white block tracking-tight">{loadingStats ? '...' : kpi.value}</span>
+                <span className="text-xs font-medium text-white/30">{kpi.label}</span>
+              </div>
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-slate-900/40 border border-white/5 rounded-[3rem] p-10 space-y-10"><h3 className="text-lg font-black text-white uppercase tracking-[0.2em] flex items-center gap-3"><Activity className="h-4 w-4 text-brand-400" /> System Flux</h3>
-            <div className="h-72 w-full"><ResponsiveContainer width="100%" height="100%"><AreaChart data={stats.timeline}><defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.02)" /><XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'rgba(255,255,255,0.2)', fontSize: 10}} dy={15} /><Tooltip contentStyle={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px' }} /><Area type="monotone" dataKey="applications" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#gr)" /></AreaChart></ResponsiveContainer></div>
-          </div>
-          <div className="bg-slate-900/40 border border-white/5 rounded-[3rem] p-10 flex flex-col space-y-8"><h3 className="text-lg font-black text-white uppercase tracking-[0.2em]">Matrix Distribution</h3>
-            <div className="h-56 w-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={stats.skills} cx="50%" cy="50%" innerRadius={70} outerRadius={95} paddingAngle={8} dataKey="value" stroke="none">{stats.skills.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-            <div className="space-y-4 mt-auto">{stats.skills.map((skill, i) => (<div key={i} className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="h-2 w-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} /> <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">{skill.name}</span></div><span className="text-xs font-black text-white">{skill.value}</span></div>))}</div>
-          </div>
+
+        <div className="flex gap-2 p-1 bg-white/5 rounded-xl w-fit">
+          {['Overview', 'Skills Analysis', 'Pipeline Funnel'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab.toLowerCase() as any)}
+              className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                activeTab === tab.toLowerCase() ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-white/40 hover:text-white'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
-        <div className="bg-slate-900/40 border border-white/5 rounded-[3rem] p-10 space-y-8"><h3 className="text-lg font-black text-white uppercase tracking-[0.2em]">Recent Deployments</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {stats.recentJobs.map((job) => (<div key={job.id} onClick={() => { setActiveJob(job); setViewMode('workflow'); setStep(2); }} className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 hover:border-brand-400/40 transition-all cursor-pointer group hover:bg-white/[0.04]"><div className="flex items-center gap-5 mb-6"><div className="h-14 w-14 rounded-2xl bg-brand-400/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-700"><Briefcase className="h-7 w-7 text-brand-400" /></div><div><h4 className="font-black text-white uppercase text-sm tracking-tight leading-none mb-2">{job.title}</h4><p className="text-[10px] text-white/20 font-black uppercase tracking-widest">{job.location}</p></div></div><div className="flex items-center justify-between text-[10px] font-black text-white/40 uppercase tracking-[0.2em]"><span>{job.experience_range}</span> <ArrowRight className="h-4 w-4 group-hover:translate-x-2 transition-all" /></div></div>))}
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-4 bg-[#121421] border border-white/5 rounded-3xl p-10 space-y-8">
+            <h3 className="text-lg font-bold text-white tracking-tight">Applications Over Time (30 Days)</h3>
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.timeline}>
+                  <defs>
+                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#818cf8" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#818cf8" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'rgba(255,255,255,0.3)', fontSize: 12}} dy={15} />
+                  <Tooltip contentStyle={{ background: '#121421', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }} />
+                  <Area type="monotone" dataKey="applications" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#chartGradient)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2 bg-[#121421] border border-white/5 rounded-3xl p-8 space-y-8">
+            <h3 className="text-lg font-bold text-white tracking-tight">Score Distribution</h3>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={stats.skills} cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value" stroke="none">
+                    {stats.skills.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-3">
+              {stats.skills.map((skill, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                    <span className="text-xs font-medium text-white/40">{skill.name}</span>
+                  </div>
+                  <span className="text-xs font-bold text-white">{skill.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="lg:col-span-2 bg-[#121421] border border-white/5 rounded-3xl p-8 flex flex-col justify-center text-center space-y-4">
+             <h3 className="text-lg font-bold text-white tracking-tight">Experience Breakdown</h3>
+             <div className="py-10">
+               <div className="text-5xl font-black text-indigo-400 mb-2">3.4Y</div>
+               <p className="text-xs font-medium text-white/30 uppercase tracking-widest">Average Tenure</p>
+             </div>
+             <button className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all">View Details</button>
           </div>
         </div>
       </div>
