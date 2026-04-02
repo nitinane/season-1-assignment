@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Briefcase, Mail, Zap, CheckCircle2, Loader2, ArrowRight, 
-  ShieldCheck, Award, Send, User
+  ShieldCheck, Award, Send, User, Users, CheckCircle, 
+  Target, TrendingUp, Activity
 } from 'lucide-react';
+import {
+  AreaChart, Area, ResponsiveContainer, Tooltip, RadarChart, 
+  PolarGrid, PolarAngleAxis, Radar
+} from 'recharts';
 import { jobRoleService } from '../services/jobRoleService';
 import * as gmailService from '../services/gmailService';
 import { aiRankingService } from '../services/aiRankingService';
@@ -11,8 +16,10 @@ import { shortlistService } from '../services/shortlistService';
 import { sendShortlistEmail } from '../services/mailService';
 import { parseResume } from '../lib/parser';
 import { extractResumeData } from '../lib/groq';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import type { JobRole, ShortlistedCandidate } from '../types';
 import toast from 'react-hot-toast';
+import { format, subDays, isSameDay } from 'date-fns';
 
 export default function Dashboard() {
   // Workflow States
@@ -45,6 +52,71 @@ export default function Dashboard() {
   // Step 3: AI Ranking States
   const [isRanking, setIsRanking] = useState(false);
   const [shortlist, setShortlist] = useState<ShortlistedCandidate[]>([]);
+  
+  // Analytics States
+  const [stats, setStats] = useState({
+    total: 0,
+    shortlisted: 0,
+    avgScore: 0,
+    velocity: 0,
+    timeline: [] as any[],
+    skills: [] as any[]
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      const [
+        { data: candidates },
+        { data: shortlists }
+      ] = await Promise.all([
+        supabase.from('candidates').select('id, created_at, skills').eq('hr_user_id', currentUser.id),
+        supabase.from('shortlisted_candidates').select('score, generated_at').eq('hr_user_id', currentUser.id)
+      ]);
+
+      const totalC = candidates?.length || 0;
+      const totalS = shortlists?.length || 0;
+      const avgS = shortlists?.length ? Math.round(shortlists.reduce((a, b) => a + (b.score || 0), 0) / shortlists.length) : 0;
+      
+      const timeline = Array.from({ length: 14 }, (_, i) => {
+        const d = subDays(new Date(), 13 - i);
+        const apps = candidates?.filter(c => isSameDay(new Date(c.created_at), d)).length || 0;
+        return { date: format(d, 'MMM d'), count: apps };
+      });
+
+      // Quick skills
+      const skillMap: Record<string, number> = {};
+      candidates?.forEach(c => {
+        const cSkills = Array.isArray(c.skills) ? c.skills : (c.skills?.split(',') || []);
+        cSkills.forEach((s: string) => {
+          const trimmed = s.trim();
+          if (trimmed) skillMap[trimmed] = (skillMap[trimmed] || 0) + 1;
+        });
+      });
+      const topSkills = Object.entries(skillMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([skill, value]) => ({ skill, value }));
+
+      setStats({
+        total: totalC,
+        shortlisted: totalS,
+        avgScore: avgS,
+        velocity: timeline.reduce((a, b) => a + b.count, 0),
+        timeline,
+        skills: topSkills
+      });
+    } catch (err) {
+      console.error("Stats fetch error:", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   // Step 1: Create Job Role
   const handleCreateJob = async (e: React.FormEvent) => {
@@ -180,6 +252,80 @@ export default function Dashboard() {
           Scale your hiring from JD creation to AI-ranked shortlists in one continuous, high-precision workflow.
         </p>
       </div>
+
+      {/* Enterprise KPI Command Bar */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Resumes Pooled', value: stats.total, icon: Users, color: 'text-blue-400', sub: 'Total Inflow' },
+          { label: 'Top Matches', value: stats.shortlisted, icon: CheckCircle, color: 'text-emerald-400', sub: 'High Probability' },
+          { label: 'Avg AI Score', value: `${stats.avgScore}%`, icon: Target, color: 'text-brand-400', sub: 'Quality Average' },
+          { label: 'Growth Velocity', value: `+${stats.velocity}`, icon: TrendingUp, color: 'text-orange-400', sub: 'Last 14 Days' },
+        ].map((kpi, i) => (
+          <div key={i} className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex flex-col gap-1 hover:border-white/10 transition-colors group">
+            <div className="flex items-center justify-between mb-2">
+              <div className={`p-2 rounded-lg bg-surface-50 border border-white/5 ${kpi.color}`}>
+                <kpi.icon className="h-4 w-4" />
+              </div>
+              <Activity className="h-3 w-3 text-white/10 group-hover:text-white/30 transition-colors" />
+            </div>
+            <span className="text-2xl font-black text-white tracking-tight">{loadingStats ? '—' : kpi.value}</span>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">{kpi.label}</span>
+              <span className="text-[8px] font-medium text-white/20 uppercase tracking-widest">{kpi.sub}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Visual Intelligence Section */}
+      {!loadingStats && stats.total > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-4 duration-1000">
+          <div className="lg:col-span-2 bg-slate-900/40 border border-white/5 rounded-[2rem] p-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-white">Pipeline Health</h3>
+                <p className="text-[10px] text-white/30 uppercase tracking-widest">Global Resume Inflow Velocity</p>
+              </div>
+              <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md">
+                <TrendingUp className="h-3 w-3" /> System Stable
+              </div>
+            </div>
+            <div className="h-32 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.timeline}>
+                  <defs>
+                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Tooltip 
+                    contentStyle={{ background: '#020617', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                  <Area type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-8 flex flex-col items-center justify-center text-center space-y-4">
+             <div className="h-32 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={stats.skills}>
+                    <PolarGrid stroke="rgba(255,255,255,0.05)" />
+                    <PolarAngleAxis dataKey="skill" tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 8 }} />
+                    <Radar name="Count" dataKey="value" stroke="#6366f1" fill="#6366f1" fillOpacity={0.4} />
+                  </RadarChart>
+                </ResponsiveContainer>
+             </div>
+             <div>
+                <h3 className="text-sm font-bold text-white">Talent Concentration</h3>
+                <p className="text-[10px] text-white/30 uppercase tracking-widest px-4">Dominant skills in current pool</p>
+             </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-8">
         
