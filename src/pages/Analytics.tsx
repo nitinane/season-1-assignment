@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { Users, CheckCircle, XCircle, Copy, AlertTriangle, Award } from 'lucide-react';
 import { format, subDays, isSameDay } from 'date-fns';
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 
 const normalizeList = (value: string[] | string | null | undefined): string[] => {
   if (!value) return [];
@@ -58,16 +58,18 @@ export default function Analytics() {
   useEffect(() => {
     async function fetchRealData() {
       try {
+        const currentUser = await getCurrentUser();
         const [
           { data: candidates },
           { data: shortlisted },
           { data: duplicates },
           { data: frauds }
         ] = await Promise.all([
-          supabase.from('candidates').select('*'),
-          supabase.from('shortlisted_candidates').select('*'),
-          supabase.from('duplicate_flags').select('candidate_id'),
-          supabase.from('fraud_flags').select('candidate_id')
+          supabase.from('candidates').select('*').eq('hr_user_id', currentUser.id),
+          supabase.from('shortlisted_candidates').select('*').eq('hr_user_id', currentUser.id),
+          // duplicate_flags and fraud_flags schemas might need to be adjusted if not having hr_user_id, but the user plan assumed yes for all.
+          supabase.from('duplicate_flags').select('candidate_id').eq('hr_user_id', currentUser.id),
+          supabase.from('fraud_flags').select('candidate_id').eq('hr_user_id', currentUser.id)
         ]);
 
         const totalC = candidates?.length || 0;

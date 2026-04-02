@@ -10,7 +10,7 @@ import { useCandidateStore } from '../store/candidateStore';
 import { fetchEmails, getSenderEmail, getResumeAttachments, buildResumeQuery } from '../services/gmailService';
 import { sendShortlistEmail } from '../services/mailService';
 import { parseResume } from '../lib/parser';
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import {
   calculateLocalScore,
   bulkScoreCandidates,
@@ -131,10 +131,12 @@ function CandidateCard({
     if (expanded && questions.length === 0) {
       async function fetchQs() {
         try {
+          const currentUser = await getCurrentUser();
           const { data } = await supabase
             .from('interview_questions')
             .select('questions')
             .eq('shortlisted_id', entry.id)
+            .eq('hr_user_id', currentUser.id)
             .single();
           if (data && data.questions) {
             setQuestions(data.questions);
@@ -156,8 +158,10 @@ function CandidateCard({
       updateShortlisted(entry.id, { interview_questions: qs });
       
       // Save to Supabase
+      const currentUser = await getCurrentUser();
       await supabase.from('interview_questions').insert({
         shortlisted_id: entry.id,
+        hr_user_id: currentUser.id,
         questions: qs
       });
       
@@ -183,9 +187,10 @@ function CandidateCard({
         updateShortlisted(entry.id, { email_status: 'sent' });
         onEmailSent(entry.id);
         
+        const currentUser = await getCurrentUser();
         await supabase.from('sent_emails').insert({
           candidate_id: candidate.id,
-          hr_user_id: hrUser.id,
+          hr_user_id: currentUser.id,
           status: 'sent',
           sent_at: new Date().toISOString()
         });
@@ -194,9 +199,10 @@ function CandidateCard({
       } else {
         updateShortlisted(entry.id, { email_status: 'failed' });
         
+        const currentUser = await getCurrentUser();
         await supabase.from('sent_emails').insert({
           candidate_id: candidate.id,
-          hr_user_id: hrUser.id,
+          hr_user_id: currentUser.id,
           status: 'failed'
         });
         
@@ -441,10 +447,12 @@ export default function Candidates() {
     async function loadHydration() {
       if (!currentJob?.id) return;
       try {
+        const currentUser = await getCurrentUser();
         const { data: shorts } = await supabase
           .from('shortlisted_candidates')
           .select('*')
           .eq('job_id', currentJob.id)
+          .eq('hr_user_id', currentUser.id)
           .order('rank', { ascending: true });
           
         if (shorts && shorts.length > 0) {
@@ -605,9 +613,11 @@ export default function Candidates() {
       setProcessing({ step: 'shortlisting', progress: 95, message: 'Cleaning up previous results...' });
       try {
         // STEP 5: Clear old results first (Stale UI Fix)
+        const currentUser = await getCurrentUser();
         const { error: delErr } = await supabase
           .from('shortlisted_candidates')
           .delete()
+          .eq('hr_user_id', currentUser.id)
           .eq('job_id', currentJob.id);
         
         if (delErr) {
@@ -617,10 +627,11 @@ export default function Candidates() {
         for (const shortlistMatch of finalCandidates) {
            // Insert candidate if not exists.
            // Note: candidate_id might be missing from the table temporarily.
-           await supabase.from('candidates').upsert(shortlistMatch.candidate, { onConflict: 'id' });
+           await supabase.from('candidates').upsert({ ...shortlistMatch.candidate, hr_user_id: currentUser.id }, { onConflict: 'id' });
            
            // Insert shortlist entry with ACTUAL Schema Column Names (Task 3 & 4)
            const { error } = await supabase.from('shortlisted_candidates').insert({
+              hr_user_id: currentUser.id,
               id: shortlistMatch.id,
               candidate_id: shortlistMatch.candidate_id,
               job_id: shortlistMatch.job_id,

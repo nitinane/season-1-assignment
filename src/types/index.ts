@@ -22,7 +22,7 @@ export interface JobRole {
 
 export interface Candidate {
   id: string;
-  job_id: string;
+  job_role_id: string;
   full_name: string;
   email: string;
   phone: string;
@@ -43,30 +43,18 @@ export interface Candidate {
 export interface ShortlistedCandidate {
   id: string;
   candidate_id: string;
-  job_id: string;
-  name: string;
-  email: string;
+  job_role_id: string;
   score: number;
-  rank: number;
-  strengths: string[];
-  weaknesses: string[];
-  reason: string;
-  localScore: number;
   match_percentage?: number;
   summary?: string;
+  reason: string;
+  strengths: string[];
   missing_skills?: string[];
-  jdMatchScore?: number;
-  industryFitScore?: number;
-  projectRelevanceScore?: number;
-  experienceDepthScore?: number;
-  communicationScore?: number;
-  industryFit?: string;
-  recommendation?: string;
+  rank: number;
   interview_questions?: InterviewQuestion[];
-  candidate?: Candidate;
-  duplicate_flag?: DuplicateFlag;
-  fraud_flag?: FraudFlag;
   email_status?: 'pending' | 'sent' | 'failed';
+  created_at: string;
+  candidate?: Candidate;
 }
 
 export interface DuplicateFlag {
@@ -74,7 +62,7 @@ export interface DuplicateFlag {
   candidate_id: string;
   duplicate_of_id: string;
   reason: string;
-  similarity_score?: number;
+  created_at: string;
 }
 
 export interface FraudFlag {
@@ -82,6 +70,8 @@ export interface FraudFlag {
   candidate_id: string;
   risk_level: 'low' | 'medium' | 'high';
   reasons: string[];
+  created_at: string;
+  candidates?: Candidate;
 }
 
 export interface InterviewQuestion {

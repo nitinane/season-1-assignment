@@ -9,6 +9,11 @@ import Jobs from './pages/Jobs';
 import Candidates from './pages/Candidates';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import ResumeUpload from './pages/ResumeUpload';
+import RankingView from './pages/RankingView';
+import ShortlistView from './pages/ShortlistView';
+import FraudDashboard from './pages/FraudDashboard';
+import FollowUpTracker from './pages/FollowUpTracker';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
@@ -47,6 +52,11 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="jobs" element={<Jobs />} />
+          <Route path="upload" element={<ResumeUpload />} />
+          <Route path="analysis" element={<RankingView />} />
+          <Route path="shortlist" element={<ShortlistView />} />
+          <Route path="fraud" element={<FraudDashboard />} />
+          <Route path="follow-up" element={<FollowUpTracker />} />
           <Route path="candidates" element={<Candidates />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="settings" element={<Settings />} />

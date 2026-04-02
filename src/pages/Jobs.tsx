@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Briefcase, X, ChevronRight, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentUser } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { useJobStore } from '../store/jobStore';
 import { useCandidateStore } from '../store/candidateStore';
@@ -40,8 +40,9 @@ function JobForm({ onSuccess }: { onSuccess: () => void }) {
     if (skills.length === 0) return toast.error('Add at least one required skill');
     setSaving(true);
     try {
+      const currentUser = await getCurrentUser();
       const { data, error } = await supabase.from('job_roles').insert({
-        hr_user_id: user?.id,
+        hr_user_id: currentUser.id,
         title: title.trim(),
         description: description.trim(),
         experience_level: expLevel,
@@ -168,8 +169,13 @@ export default function Jobs() {
   useEffect(() => {
     const load = async () => {
       if (!user) return;
-      const { data } = await supabase.from('job_roles').select('*').order('created_at', { ascending: false });
-      if (data) setJobs(data as JobRole[]);
+      try {
+        const currentUser = await getCurrentUser();
+        const { data } = await supabase.from('job_roles').select('*').eq('hr_user_id', currentUser.id).order('created_at', { ascending: false });
+        if (data) setJobs(data as JobRole[]);
+      } catch (e) {
+        console.error(e);
+      }
       setLoading(false);
     };
     load();

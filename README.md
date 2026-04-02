@@ -1,153 +1,131 @@
-# HireFlow AI 🚀
+# AI-Powered Resume Shortlisting & Candidate Tracking System
 
-> AI-powered resume screening and comparative candidate ranking platform for modern HR teams.
-
-![HireFlow AI Banner](https://img.shields.io/badge/HireFlow%20AI-HR%20Tech%20SaaS-6366f1?style=for-the-badge)
-![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20TypeScript%20%7C%20Supabase%20%7C%20Groq-06b6d4?style=for-the-badge)
+An intelligent hiring assistant built for HR teams and recruiters to automate resume screening, candidate ranking, fraud detection, shortlisting, and follow-up management.
 
 ---
 
-## What It Does
+## 🚀 Features
 
-HireFlow AI automates the **entire initial recruitment workflow** — from receiving resumes through Gmail to AI-ranked candidate shortlisting and automated email outreach.
-
-**Before HireFlow AI:** HR teams manually review 50–100 resumes, taking days.  
-**After HireFlow AI:** Top 10 candidates shortlisted in minutes with high-fidelity comparative AI scoring.
-
----
-
-## 🎯 How to Use
-
-Follow these steps to screen candidates with HireFlow AI:
-
-### 1. Account Setup
-- **Login**: Click **"Sign in with Google"**. Ensure you grant the requested Gmail permissions (Read/Send) so the AI can access your recruitment mailbox.
-- **Job Role**: Navigate to the **Jobs** tab and create a new position (e.g., "Senior Frontend Developer"). Define the required skills and experience levels.
-
-### 2. Running the AI Pipeline
-- Go to the **Candidates** tab.
-- **Date Filtering**: Select the date range during which you received the applications in your Gmail account.
-- **Bias-Free Toggle**: Optionally turn on **"Bias-Free AI Screening"** to anonymize resumes before they reach the AI.
-- **Screening**: Click **"Fetch & Score Resumes"**.
-
-### 3. Reviewing the Shortlist
-- Once the pipeline completes (approx. 2-5 minutes depending on volume), the **Top 10 Comparative Ranking** will appear.
-- **AI Verdict**: Expand each candidate card to see their **Unique Ranking Reason**, AI-generated **Summary**, and specific **Strengths/Weaknesses**.
-- **Prep**: Click **"Interview Questions"** to get 5-10 tailored technical questions for that specific candidate.
-
-### 4. Automated Outreach
-- Click **"Send Next Round Email"** to immediately notify the candidate they've been shortlisted. The system uses a clean, plain-text encoding to ensure the message arrives perfectly.
+- Google Login with secure authentication
+- Gmail inbox access for fetching resumes
+- AI-powered resume analysis
+- Candidate ranking and scoring
+- Top 10 automatic shortlisting
+- Fraud / duplicate detection
+- Follow-up tracking
+- Role-based job requirement matching
+- Multi-user secure data isolation
+- Per-HR private dashboard using Supabase RLS
 
 ---
 
-## Comparative Ranking Architecture
+## 🛠 Tech Stack
 
-Unlike traditional ATS systems that score resumes individually, HireFlow AI uses a **Bulk Comparative Ranking Architecture**:
-
-1.  **Dossier Generation**: The system compiles all resumes in a single date range into a high-detail dossier.
-2.  **Global Comparison**: The Groq AI (Llama 3.3 70B) analyzes the entire pool simultaneously, ranking candidates against each other rather than just against a static checklist.
-3.  **Identity Discovery**: A robust regex-based extraction engine identifies real names (e.g., identifying patterns preceding 'Email:') ensuring 100% data realism even with poor resume formatting.
-4.  **Silent Fallback**: A high-speed local smart-ranking algorithm acts as a safety net, ensuring the UI always displays results even if API limits are reached.
-
----
-
-## Features
-
-| Feature | Description |
-|---|---|
-| 🔐 Google OAuth | Supabase Auth with Gmail scopes (`gmail.readonly`, `gmail.send`) |
-| 📧 Gmail Integration | Automated mail fetching + resume attachment extraction |
-| 📄 Multiformat Parsing | PDF.js + mammoth.js support for PDF & DOCX |
-| 🤖 Bulk AI Ranking | Groq Llama-3.3-70B comparative analysis for Top 10 |
-| 🆔 Identity Discovery | Regex + first-line cleansing to extract real candidate names |
-| ⚖️ Bias-Free Mode | Optional anonymization of names/gender/location |
-| 📬 Clean Emailing | Automated shortlist notification with plain-text encoding safety |
-| 🎯 Interview Prep | AI-generated technical & behavioral questions per candidate |
+- Frontend: React + Vite + TypeScript
+- Backend: Supabase
+- Authentication: Google OAuth
+- Database: PostgreSQL (Supabase)
+- AI Engine: LLM-based resume comparison
+- Email Access: Gmail API
 
 ---
 
-## Tech Stack & Dependencies
+## 🔐 Login & Authentication
 
-### Core Stack
-- **Frontend**: React 19 + TypeScript + Vite 8
-- **Styling**: Tailwind CSS v3 + Lucide React
-- **Backend / DB**: Supabase (PostgreSQL + RLS)
-- **AI Engine**: Groq SDK (Llama 3.3 70B Versatile)
-- **State Management**: Zustand 5
+### Step 1: Login
+Click **Continue with Google** on the login page.
 
-### Key Dependencies
-- `@supabase/supabase-js`: Database & Auth interaction
-- `groq-sdk`: High-speed AI inference
-- `pdfjs-dist`: High-performance PDF text extraction
-- `mammoth`: DOCX to HTML/Text conversion
-- `date-fns`: Date manipulation for Gmail queries
-- `recharts`: Analytics and data visualization
-- `react-hot-toast`: Real-time UI notifications
+The application uses **Google OAuth via Supabase authentication**.
+
+After successful login:
+
+- Your profile is created securely
+- Your private workspace is generated
+- All data is linked to your account using `hr_user_id`
 
 ---
 
-## Quick Start
+## 📩 Permissions Requested
 
-### 1. Clone & Install
+The application may request the following permissions:
 
-```bash
-cd hireflow-ai
-npm install
+### 1. Basic Profile Access
+Used to identify the HR user securely.
+
+Includes:
+- name
+- email
+- profile image
+
+---
+
+### 2. Gmail Read Access
+Used to fetch candidate resumes from emails.
+
+Access required:
+- Read emails
+- Read attachments / resumes
+- Read sender details
+- Read received date
+
+This is used only for:
+- fetching resumes
+- extracting candidate details
+- AI comparison
+
+---
+
+### 3. Gmail Send Access
+Used to send automated follow-up emails.
+
+This is used only for:
+- shortlist emails
+- next-round interview emails
+- follow-up reminders
+
+---
+
+## ⚠ Google Verification Warning
+
+You may see this screen:
+
+**"Google hasn't verified this app"**
+
+This happens because the app is currently in **testing mode**.
+
+To continue:
+
+1. Click **Advanced**
+2. Click **Go to project name (unsafe)**
+3. Continue login
+
+This is safe for testing and internal usage.
+
+---
+
+## 📌 How It Works (Step-by-Step)
+
+### Step 1: Login
+Login using Google account.
+
+---
+
+### Step 2: Create Job Role
+Go to **Job Roles**
+
+Create a role with:
+
+- title
+- description
+- required skills
+- experience level
+- tools
+- requirements
+
+Example:
+
+```text id="n6f2r4"
+Frontend Developer
+React, TypeScript, Tailwind, REST APIs
+2+ years experience
 ```
-
-### 2. Configure Environment
-
-Create a `.env` file in the root:
-
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_GROQ_API_KEY=gsk_your-groq-key
-```
-
-### 3. Set Up Supabase
-
-1.  Initialize your database using the provided migrations in `supabase/migrations/`.
-2.  Enable **Google OAuth** in the Supabase Auth dashboard.
-3.  Ensure the `shortlisted_candidates` table includes columns for `candidate_name`, `candidate_email`, and `resume_text`.
-
-### 4. Set Up Google OAuth + Gmail API
-
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create a project → Enable **Gmail API**
-3. Create **OAuth 2.0 Client ID** (Web application)
-4. Add redirect URI: `https://your-project.supabase.co/auth/v1/callback`
-5. Copy Client ID → Supabase Dashboard → Auth → Google Provider
-
-### 5. Run Locally
-
-```bash
-npm run dev
-```
-
----
-
-## Project Structure
-
-```
-src/
-├── components/      # UI Components (CandidateCard, ScoreRing, etc.)
-├── lib/
-│   ├── supabase.ts  # Database Client
-│   ├── groq.ts      # Bulk AI Ranking Engine
-│   └── parser.ts    # PDF/DOCX multi-format parser
-├── services/
-│   ├── gmailService.ts # Gmail API interaction
-│   └── mailService.ts  # Shortlist email automation
-├── pages/
-│   ├── Candidates.tsx  # Main AI Screening Pipeline
-│   └── Dashboard.tsx   # Analytics & Overview
-├── store/           # Zustand Stores
-└── types/           # TypeScript Definitions
-```
-
----
-
-## License
-
-MIT © HireFlow AI 2025

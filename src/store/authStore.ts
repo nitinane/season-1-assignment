@@ -12,11 +12,12 @@ interface AuthStore {
   setAccessToken: (token: string | null) => void;
   setLoading: (loading: boolean) => void;
   clear: () => void;
+  getHrUserId: () => string | null;
 }
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       session: null,
       accessToken: null,
@@ -26,6 +27,7 @@ export const useAuthStore = create<AuthStore>()(
       setAccessToken: (token) => set({ accessToken: token }),
       setLoading: (isLoading) => set({ isLoading }),
       clear: () => set({ user: null, session: null, accessToken: null }),
+      getHrUserId: () => get().user?.id ?? null,
     }),
     { name: 'hireflow-auth', partialize: (s) => ({ accessToken: s.accessToken }) }
   )

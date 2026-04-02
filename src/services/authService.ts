@@ -7,7 +7,7 @@ export const handleGoogleLogin = async () => {
     options: {
       scopes:
         "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send",
-      redirectTo: `${window.location.origin}/dashboard`,
+      redirectTo: `${window.location.origin}/`,
       queryParams: {
         access_type: "offline",
         prompt: "consent",
@@ -74,4 +74,23 @@ export const getGoogleToken = async (): Promise<string> => {
 export const signOut = async () => {
   await supabase.auth.signOut();
   useAuthStore.getState().clear();
+};
+
+/**
+ * Returns the authenticated HR User ID.
+ * Used for all scoped database operations.
+ */
+export const getCurrentUser = async (): Promise<string> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id;
+  
+  if (!userId) {
+    // Fallback to store if session is not immediately available
+    const storeUserId = useAuthStore.getState().user?.id;
+    if (storeUserId) return storeUserId;
+    
+    throw new Error("Authentication required. Please log in.");
+  }
+  
+  return userId;
 };
