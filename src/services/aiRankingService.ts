@@ -1,5 +1,6 @@
-import type { GmailMessage } from '../types';
-import { getSenderEmail } from './gmailService';
+import { supabase } from '../lib/supabase';
+import { bulkScoreCandidates } from '../lib/groq';
+import { getCurrentUser } from './authService';
 
 export const industryBenchmarks: Record<string, string[]> = {
   "Frontend Developer": [
@@ -51,44 +52,81 @@ export const getBenchmarksForRole = (title: string): string[] => {
   ];
 };
 
-export interface CandidateDTO {
-  senderName: string;
-  senderEmail: string;
-  attachmentFiles: Array<{ filename: string; blob: Blob; mimeType: string }>;
-  resumeText: string;
-  receivedDate: string;
-}
+export const aiRankingService = {
+  /**
+   * Orchestrates the full AI ranking pipeline for a specific job role.
+   * Compares all candidates in the database for this job.
+   */
+  async processRankingPipeline(jobId: string) {
+    const hr_user_id = await getCurrentUser();
+    
+    // 1. Fetch Job Role Details
+    const { data: job, error: jobErr } = await supabase
+      .from('job_roles')
+      .select('*')
+      .eq('id', jobId)
+      .eq('hr_user_id', hr_user_id)
+      .single();
+    
+    if (jobErr || !job) throw new Error('Job role not found or access denied');
 
-/**
- * Maps raw Gmail message and processed resume data to a clean AI Ranking DTO.
- */
-export const mapToCandidateDTO = (
-  message: GmailMessage,
-  attachments: Array<{ filename: string; blob: Blob; mimeType: string }>,
-  resumeText: string
-): CandidateDTO => {
-  const fromHeader = message.payload?.headers.find((h) => h.name.toLowerCase() === 'from');
-  const senderName = fromHeader ? fromHeader.value.split('<')[0].trim() : 'Unknown';
-  const senderEmail = getSenderEmail(message);
-  
-  // Extract date
-  const dateHeader = message.payload?.headers.find((h) => h.name.toLowerCase() === 'date');
-  const receivedDate = dateHeader ? new Date(dateHeader.value).toISOString() : new Date().toISOString();
+    // 2. Fetch all candidates for this HR user (or specifically for this job if tagged)
+    // Note: Candidates aren't technically linked to jobs in the candidates table, 
+    // but we rank them all against this specific job's JD.
+    const { data: allCandidates, error: candErr } = await supabase
+      .from('candidates')
+      .select('*')
+      .eq('hr_user_id', hr_user_id);
+      
+    if (candErr) throw candErr;
+    if (!allCandidates || allCandidates.length === 0) return [];
 
-  return {
-    senderName,
-    senderEmail,
-    attachmentFiles: attachments,
-    resumeText,
-    receivedDate
-  };
-};
+    // 3. Transform for Groq Bulk Engine
+    const formattedCandidates = allCandidates.map(c => ({
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      phone: c.phone,
+      summary: c.summary || c.raw_text?.slice(0, 500),
+      rawText: c.raw_text || "",
+    }));
 
-/**
- * Placeholder for future AI Ranking logic (scoring, categorization, etc.)
- */
-export const rankCandidate = async (dto: CandidateDTO) => {
-  console.log("Ranking candidate data:", dto.senderEmail);
-  // Future implementation: interact with Groq/LLM to provide scores
-  return true;
+    // 4. Trigger Bulk AI Ranking
+    const aiResults = await bulkScoreCandidates(formattedCandidates, job);
+
+    if (!aiResults || aiResults.length === 0) throw new Error('AI Ranking failed to produce results');
+
+    // 5. Clear stale shortlist for this job
+    await supabase
+      .from('shortlisted_candidates')
+      .delete()
+      .eq('job_id', jobId)
+      .eq('hr_user_id', hr_user_id);
+
+    // 6. Save top 10 results
+    const resultsToSave = aiResults.map(res => {
+      const originalCandidate = allCandidates.find(c => c.name === res.name || c.email === res.email);
+      return {
+        hr_user_id,
+        job_id: jobId,
+        candidate_id: originalCandidate?.id,
+        score: Math.round(res.score),
+        rank: res.rank,
+        candidate_name: res.name,
+        candidate_email: res.email,
+        reason: res.reason,
+        strengths: res.strengths,
+        weaknesses: res.weaknesses || [],
+        resume_text: res.summary || originalCandidate?.raw_text?.slice(0, 1000)
+      };
+    });
+
+    const { data: saved, error: saveErr } = await supabase
+      .from('shortlisted_candidates')
+      .insert(resultsToSave)
+      .select();
+
+    if (saveErr) throw saveErr;
+    return saved;
+  }
 };

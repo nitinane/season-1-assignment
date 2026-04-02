@@ -9,6 +9,7 @@ import { candidateService } from '../services/candidateService';
 import { extractResumeData } from '../lib/groq';
 import { parseResume } from '../lib/parser';
 import { jobRoleService } from '../services/jobRoleService';
+import { aiRankingService } from '../services/aiRankingService';
 import type { JobRole } from '../types';
 import toast from 'react-hot-toast';
 
@@ -148,12 +149,20 @@ export default function ResumeUpload() {
       }
 
       const successCount = finalFileList.filter(f => f.status === 'done').length;
-      toast.success(`Successfully processed ${successCount} resumes!`);
       
-      // Auto-navigate to analysis after a short delay
-      setTimeout(() => {
-        navigate('/analysis');
-      }, 1500);
+      if (successCount > 0) {
+        toast.loading('Initializing AI Ranking Engine...', { duration: 3000 });
+        // 4. Trigger Automatic AI Ranking Pipeline
+        await aiRankingService.processRankingPipeline(selectedRole);
+        toast.success(`Successfully processed and ranked ${successCount} candidates!`);
+        
+        // Auto-navigate to shortlist after a short delay
+        setTimeout(() => {
+          navigate(`/shortlist?role=${selectedRole}`);
+        }, 1000);
+      } else {
+        toast.error('No resumes were successfully processed.');
+      }
 
     } catch (error) {
       console.error('Batch upload failed:', error);

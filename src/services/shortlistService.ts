@@ -54,7 +54,7 @@ export const shortlistService = {
   async getShortlist(jobId: string) {
     const { data, error } = await supabase
       .from('shortlisted_candidates')
-      .select('*, candidates(*)')
+      .select('*, candidate:candidates(*)')
       .eq('job_id', jobId)
       .order('rank', { ascending: true });
 
