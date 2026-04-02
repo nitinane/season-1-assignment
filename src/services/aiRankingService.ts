@@ -91,10 +91,45 @@ export const aiRankingService = {
       rawText: c.raw_text || "",
     }));
 
-    // 4. Trigger Bulk AI Ranking
-    const aiResults = await bulkScoreCandidates(formattedCandidates, job);
+    // 4. Trigger Bulk AI Ranking (Batching to top 20 for safety)
+    const batchCandidates = formattedCandidates.slice(0, 20);
+    let aiResults: any[] = [];
+    
+    try {
+      aiResults = await bulkScoreCandidates(batchCandidates, job);
+    } catch (err) {
+      console.error("Critical AI Ranking Error:", err);
+    }
 
-    if (!aiResults || aiResults.length === 0) throw new Error('AI Ranking failed to produce results');
+    // 🌟 FALLBACK SYSTEM: If AI fails, use Heuristic Skills matching
+    if (!aiResults || aiResults.length === 0) {
+      console.warn("AI Ranking failed or returned empty. Using Heuristic Fallback.");
+      const requiredSkills = (job.required_skills || []).map((s: string) => s.toLowerCase());
+      
+      aiResults = batchCandidates.map((c, index) => {
+        const candidateSkills = (c.summary + " " + c.rawText).toLowerCase();
+        let matchCount = 0;
+        requiredSkills.forEach((s: string) => {
+          if (candidateSkills.includes(s)) matchCount++;
+        });
+
+        const score = requiredSkills.length > 0 
+          ? Math.min(90, Math.round((matchCount / requiredSkills.length) * 100))
+          : 50;
+
+        return {
+          rank: index + 1,
+          exact_name: c.name,
+          exact_email: c.email,
+          score: score,
+          unique_reason: "Heuristic match based on listed skills and resume keywords.",
+          strengths: ["Matching skills found in resume"],
+          weaknesses: ["Manual review recommended (AI Fallback active)"],
+          match_percentage: score,
+          reason: "Heuristic match based on listed skills and resume keywords."
+        };
+      }).sort((a, b) => b.score - a.score);
+    }
 
     // 5. Clear stale shortlist for this job
     await supabase

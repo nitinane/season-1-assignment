@@ -73,49 +73,51 @@ ${c.rawText.slice(0, 3500)}
 
 Compare ALL provided resumes against each other for the ${job.title} role.
 
-Evaluate carefully:
-- Deep React / JS / TS skills (beyond just keywords)
-- quality and scale of projects
-- internship depth and brand
-- professional experience timeline
-- portfolio / GitHub quality
-- overall fit for a high-performance team
+STRICT RULE:
+- Return ONLY valid JSON.
+- Do NOT include explanations, markdown code blocks, or conversational text.
+- Rank ALL candidates from best to worst.
+- Return ONLY the TOP 10 candidates.
+- Use a realistic, comparative ATS score distribution (e.g., 96, 92, 89, 85, 81...).
+- Generate a UNIQUE, detailed "unique_reason" (min 2 sentences).
+- Generate UNIQUE "strengths" and "weaknesses" list (min 3 items each).
+- Never use placeholder labels like "Candidate 1". Use the "exact_name" and "exact_email" from the provided dossier.
 
-REQUIRED OUTPUT:
-1. Rank ALL candidates from best to worst.
-2. Return ONLY the TOP 10 candidates.
-3. Use a realistic, comparative ATS score distribution (e.g., 96, 92, 89, 85, 81...).
-4. Generate a UNIQUE, detailed "unique_reason" for every candidate (min 2 sentences).
-5. Generate UNIQUE "strengths" and "weaknesses" list (min 3 items each).
-6. Never use placeholder labels like "Candidate 1". Use the "exact_name" from input.
-
-JSON Schema:
-Return a valid JSON array of objects:
-{
-  "rank": number,
-  "exact_name": "string",
-  "exact_email": "string",
-  "score": number,
-  "unique_reason": "string",
-  "strengths": ["string"],
-  "weaknesses": ["string"]
-}`,
+JSON Schema (Array of Objects):
+[
+  {
+    "rank": number,
+    "exact_name": "string",
+    "exact_email": "string",
+    "score": number,
+    "unique_reason": "string",
+    "strengths": ["string"],
+    "weaknesses": ["string"]
+  }
+]`,
         },
         {
           role: 'user',
-          content: `JOB ROLE: ${job.title}\n\nCandidates dossier:\n${dossier}`,
+          content: `JOB ROLE: ${job.title || "Unknown Role"}\nJD Summary: ${job.description || "No description provided"}\nRequired Skills: ${(job.required_skills || []).join(", ")}\n\nCandidates dossier:\n${dossier}`,
         },
       ],
-      temperature: 0.2,
+      temperature: 0.1,
       max_tokens: 4000,
       response_format: { type: 'json_object' },
     });
 
+    const rawContent = completion.choices[0].message.content || '';
+    console.log("AI RAW RESPONSE:", rawContent);
+
     try {
-      const content = completion.choices[0].message.content || '{"candidates": []}';
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(rawContent);
       const results = Array.isArray(parsed) ? parsed : (parsed.candidates || parsed.results || []);
       
+      if (!Array.isArray(results) || results.length === 0) {
+        console.error("AI returned empty results array:", parsed);
+        return [];
+      }
+
       return results.slice(0, 10).map((r: any) => ({
         rank: r.rank,
         name: r.exact_name,
@@ -128,7 +130,7 @@ Return a valid JSON array of objects:
         match_percentage: r.score 
       }));
     } catch (e) {
-      console.error("Bulk scoring parse error:", e);
+      console.error("Bulk scoring parse error. Raw Output:", rawContent);
       return [];
     }
   });
@@ -300,7 +302,7 @@ Return ONLY valid JSON.`,
           content: `JOB DESCRIPTION:\n${jobDesc}\n\nCANDIDATE RESUME:\n${anonymizedText.slice(0, 5000)}`,
         },
       ],
-      temperature: 0.2,
+      temperature: 0.1,
       max_tokens: 1500,
       response_format: { type: 'json_object' },
     });
