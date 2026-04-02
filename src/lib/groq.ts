@@ -209,7 +209,7 @@ export async function extractResumeData(rawText: string): Promise<Partial<Candid
           role: 'system',
           content: `Extract structured data from this resume. Return a valid JSON object with these exact fields:
 {
-  "full_name": "string or null",
+  "name": "string or null",
   "email": "string or null",
   "phone": "string or null",
   "skills": ["array of skill strings"],

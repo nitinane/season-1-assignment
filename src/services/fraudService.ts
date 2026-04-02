@@ -5,17 +5,17 @@ import type { Candidate, FraudFlag } from '../types';
 
 export const fraudService = {
   /**
-   * Check for duplicate candidates (same email/phone) within the same job role.
+   * Check for duplicate candidates (same email/phone).
    */
-  async checkDuplicates(jobRoleId: string, newCandidate: Partial<Candidate>) {
+  async checkDuplicates(_jobId: string, newCandidate: Partial<Candidate>) {
     const hr_user_id = await getCurrentUser();
     
-    // 1. Fetch potential matches in the database for the same job
+    // 1. Fetch potential matches in the database
     const { data: matches, error } = await supabase
       .from('candidates')
-      .select('id, full_name, email, phone')
-      .eq('job_role_id', jobRoleId)
-      .filter('email', 'eq', newCandidate.email);
+      .select('id, name, email, phone')
+      .eq('hr_user_id', hr_user_id)
+      .eq('email', newCandidate.email);
 
     if (error) throw error;
 
@@ -25,7 +25,7 @@ export const fraudService = {
         hr_user_id,
         candidate_id: newCandidate.id,
         duplicate_of_id: m.id,
-        reason: 'Duplicate email/phone found in same job role.',
+        reason: 'Duplicate email/phone found in system.',
       }));
 
       const { error: flagError } = await supabase
@@ -66,13 +66,14 @@ export const fraudService = {
   },
 
   /**
-   * Fetches all fraud flags for candidates in a specific role.
+   * Fetches all fraud flags for candidates.
    */
-  async getFraudFlags(jobRoleId: string) {
+  async getFraudFlags(_jobId: string) {
+    const hr_user_id = await getCurrentUser();
     const { data, error } = await supabase
       .from('fraud_flags')
       .select('*, candidates(*)')
-      .eq('candidates.job_role_id', jobRoleId);
+      .eq('hr_user_id', hr_user_id);
 
     if (error) throw error;
     return data;

@@ -6,29 +6,31 @@ export const shortlistService = {
   /**
    * Clears the current shortlist for a job role and persists a fresh Top 10.
    */
-  async persistShortlist(jobRoleId: string, rankedCandidates: AIScoreResult[]) {
+  async persistShortlist(jobId: string, rankedCandidates: AIScoreResult[]) {
     const hr_user_id = await getCurrentUser();
 
     // 1. Clear old shortlist for this role
     const { error: deleteError } = await supabase
       .from('shortlisted_candidates')
       .delete()
-      .eq('job_role_id', jobRoleId);
+      .eq('hr_user_id', hr_user_id)
+      .eq('job_id', jobId);
 
     if (deleteError) throw deleteError;
 
     // 2. Prepare new shortlist data (Top 10)
     const shortlistData = rankedCandidates.slice(0, 10).map((c) => ({
       hr_user_id,
-      job_role_id: jobRoleId,
+      job_id: jobId,
       candidate_id: (c as any).candidate_id, 
-      score: c.score,
-      match_percentage: c.match_percentage || c.score,
+      score: Math.round(c.score),
+      rank: c.rank,
+      candidate_name: c.name,
+      candidate_email: c.email || '',
       reason: c.reason,
       strengths: c.strengths,
-      missing_skills: c.missing_skills || [],
-      rank: c.rank,
-      summary: c.summary,
+      weaknesses: c.weaknesses || [],
+      resume_text: c.summary || '',
       created_at: new Date().toISOString(),
     }));
 
@@ -49,11 +51,11 @@ export const shortlistService = {
   /**
    * Fetches the shortlist for a role.
    */
-  async getShortlist(jobRoleId: string) {
+  async getShortlist(jobId: string) {
     const { data, error } = await supabase
       .from('shortlisted_candidates')
       .select('*, candidates(*)')
-      .eq('job_role_id', jobRoleId)
+      .eq('job_id', jobId)
       .order('rank', { ascending: true });
 
     if (error) throw error;

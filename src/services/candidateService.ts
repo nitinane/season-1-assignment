@@ -42,13 +42,14 @@ export const candidateService = {
   },
 
   /**
-   * Fetches candidates for a specific job role.
+   * Fetches candidates for the current HR user.
    */
-  async getCandidatesByRole(jobRoleId: string) {
+  async getCandidates() {
+    const hr_user_id = await getCurrentUser();
     const { data, error } = await supabase
       .from('candidates')
       .select('*')
-      .eq('job_role_id', jobRoleId)
+      .eq('hr_user_id', hr_user_id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Mail, Loader2, AlertTriangle, Copy, CheckCircle,
+  Mail, Loader2, CheckCircle,
   ChevronDown, ChevronUp, Send, Brain,
   MessageSquare, Zap, RefreshCw
 } from 'lucide-react';
@@ -50,9 +50,6 @@ const extractName = (text: string) => {
 };
 
 /**
- * Local fallback ranking if AI fails. (Task 3 FIX)
- */
-/**
  * Local fallback ranking if AI fails. (Task 3 & Schema FIX)
  */
 const getFallbackCandidates = (allCandidates: any[], jobId: string): ShortlistedCandidate[] => {
@@ -61,16 +58,14 @@ const getFallbackCandidates = (allCandidates: any[], jobId: string): Shortlisted
     candidate_id: candidate.id || crypto.randomUUID(),
     job_id: jobId,
     rank: index + 1,
-    name: candidate.name || `Candidate ${index + 1}`,
-    email: candidate.email || "No email",
     score: candidate.localScore || 0,
-    localScore: candidate.localScore || 0,
     reason: "Selected via smart local ranking (Fallback).",
     summary: candidate.summary || "Fallback candidate info.",
     strengths: ["Strong local score"],
     weaknesses: [],
     candidate: candidate.candidateObj,
-    email_status: 'pending'
+    email_status: 'pending' as const,
+    created_at: new Date().toISOString()
  }));
 };
 
@@ -104,11 +99,12 @@ function ScoreRing({ score }: { score: number }) {
 
 // ─── Candidate Card ───────────────────────────────────────────────────────────
 function CandidateCard({
-  entry, index, hrUser, jobTitle, onEmailSent
+  entry, index, hrUserName, hrUserEmail, jobTitle, onEmailSent
 }: {
   entry: ShortlistedCandidate;
   index: number;
-  hrUser: { id: string; name: string; email: string };
+  hrUserName: string;
+  hrUserEmail: string;
   jobTitle: string;
   onEmailSent: (id: string) => void;
 }) {
@@ -120,12 +116,6 @@ function CandidateCard({
   const { selectedJob } = useJobStore();
 
   const candidate = entry.candidate!;
-
-  const riskColor = {
-    low: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    medium: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    high: 'text-red-400 bg-red-500/10 border-red-500/20',
-  };
 
   useEffect(() => {
     if (expanded && questions.length === 0) {
@@ -178,10 +168,10 @@ function CandidateCard({
     try {
       const ok = await sendShortlistEmail(
         candidate.email,
-        candidate.full_name || 'Candidate',
+        candidate.name || 'Candidate',
         jobTitle,
-        hrUser.name,
-        hrUser.email
+        hrUserName,
+        hrUserEmail
       );
       if (ok) {
         updateShortlisted(entry.id, { email_status: 'sent' });
@@ -240,24 +230,14 @@ function CandidateCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
-            <h3 className="font-semibold text-white truncate">{entry.name || 'Unknown Candidate'}</h3>
-            {entry.duplicate_flag && (
-              <span className="badge-yellow flex items-center gap-1">
-                <Copy className="h-3 w-3" /> Duplicate Application
-              </span>
-            )}
-            {entry.fraud_flag && entry.fraud_flag.risk_level !== 'low' && (
-              <span className={clsx('badge border flex items-center gap-1', riskColor[entry.fraud_flag.risk_level])}>
-                <AlertTriangle className="h-3 w-3" />
-                {entry.fraud_flag.risk_level.charAt(0).toUpperCase() + entry.fraud_flag.risk_level.slice(1)} Risk
-              </span>
-            )}
+            <h3 className="font-semibold text-white truncate">{candidate?.name || 'Unknown Candidate'}</h3>
+            {/* Duplicates and frauds are now fetched via Flag objects or nested flags */}
             {entry.email_status === 'sent' && (
               <span className="badge-green flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Email Sent</span>
             )}
           </div>
           <div className="flex flex-wrap gap-3 text-xs text-white/40">
-            {entry.email && <span>{entry.email}</span>}
+            {candidate?.email && <span>{candidate.email}</span>}
             {candidate?.phone && <span>{candidate.phone}</span>}
             {candidate?.years_experience > 0 && <span>{candidate.years_experience}yr exp</span>}
           </div>
@@ -473,7 +453,7 @@ export default function Candidates() {
     
     if (shortlisted.length === 0) {
        loadHydration();
-    }
+     }
   }, [currentJob?.id, shortlisted.length, setShortlisted]);
 
   const runPipeline = async () => {
@@ -539,8 +519,7 @@ export default function Candidates() {
          const tempId = crypto.randomUUID();
          const candidateObj: Candidate = {
             id: tempId,
-            job_id: currentJob.id,
-            full_name: discoveredName,
+            name: discoveredName,
             email: senderEmail,
             phone: '',
             skills: [],
@@ -582,27 +561,28 @@ export default function Candidates() {
 
         if (Array.isArray(aiResults) && aiResults.length > 0) {
            finalCandidates = aiResults.map(res => {
-              // Exact match from original pool using name or email
-              const matchedLocal = allCandidatesSorted.find(c => c.name === res.name || c.email === res.email) || allCandidatesSorted[0];
-              return {
-                 id: crypto.randomUUID(),
-                 candidate_id: matchedLocal.id,
-                 job_id: currentJob.id,
-                 name: res.name || matchedLocal.name,
-                 email: res.email || matchedLocal.email,
-                 score: res.score,
-                 rank: res.rank,
-                 strengths: res.strengths,
-                 weaknesses: res.weaknesses,
-                 reason: res.reason,
-                 summary: res.summary,
-                 localScore: matchedLocal.localScore,
-                 candidate: matchedLocal.candidateObj,
-                 email_status: 'pending'
-              };
-           });
+               // Exact match from original pool using name or email
+               const matchedLocal = allCandidatesSorted.find(c => c.name === res.name || c.email === res.email) || allCandidatesSorted[0];
+               return {
+                  id: crypto.randomUUID(),
+                  candidate_id: matchedLocal.id,
+                  job_id: currentJob.id,
+                  score: res.score,
+                  rank: res.rank,
+                  strengths: res.strengths,
+                  weaknesses: res.weaknesses || [],
+                  reason: res.reason,
+                  summary: res.summary,
+                  candidate_name: res.name || matchedLocal.name,
+                  candidate_email: res.email || matchedLocal.email,
+                  resume_text: res.summary,
+                  candidate: matchedLocal.candidateObj,
+                  email_status: 'pending' as const,
+                  created_at: new Date().toISOString()
+               };
+            });
         } else {
-           throw new Error("Bulk AI returned empty results");
+            throw new Error("Bulk AI returned empty results");
         }
       } catch (aiErr) {
         console.error("Bulk AI failed, falling back to local Top 10", aiErr);
@@ -632,17 +612,16 @@ export default function Candidates() {
            // Insert shortlist entry with ACTUAL Schema Column Names (Task 3 & 4)
            const { error } = await supabase.from('shortlisted_candidates').insert({
               hr_user_id: currentUser.id,
-              id: shortlistMatch.id,
               candidate_id: shortlistMatch.candidate_id,
               job_id: shortlistMatch.job_id,
               score: Math.min(100, Math.round(shortlistMatch.score)),
               rank: shortlistMatch.rank,
-              candidate_name: shortlistMatch.name || 'Unknown',
-              candidate_email: shortlistMatch.email || 'No email',
+              candidate_name: shortlistMatch.candidate_name,
+              candidate_email: shortlistMatch.candidate_email,
               reason: shortlistMatch.reason,
               strengths: shortlistMatch.strengths,
               weaknesses: shortlistMatch.weaknesses,
-              resume_text: shortlistMatch.summary // UI Summary
+              resume_text: shortlistMatch.summary
            });
 
            if (error) {
@@ -749,7 +728,8 @@ export default function Candidates() {
                 key={`${entry.candidate_id}-${entry.rank}`} 
                 entry={entry} 
                 index={i} 
-                hrUser={hrUser} 
+                hrUserName={hrUser.name} 
+                hrUserEmail={hrUser.email} 
                 jobTitle={currentJob?.title || ''} 
                 onEmailSent={() => {}} 
               />

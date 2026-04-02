@@ -19,10 +19,10 @@ export default function FollowUpTracker() {
     jobRoleService.getRoles().then(setRoles).catch(console.error);
   }, []);
 
-  const fetchCandidates = async (roleId: string) => {
+  const fetchCandidates = async (_roleId: string) => {
     setLoading(true);
     try {
-      const data = await candidateService.getCandidatesByRole(roleId);
+      const data = await candidateService.getCandidates();
       setCandidates(data);
     } catch (error) {
       toast.error('Failed to fetch candidates');
@@ -116,11 +116,11 @@ export default function FollowUpTracker() {
                         ? 'bg-brand-400 text-slate-950 border-brand-400' 
                         : 'bg-white/5 text-white/40 border-white/10'
                     }`}>
-                      {candidate.full_name?.charAt(0) || 'U'}
+                      {candidate.name?.charAt(0) || 'U'}
                     </div>
                     <div className="space-y-0.5 overflow-hidden">
                       <p className={`text-sm font-medium truncate ${selectedCandidate === candidate.id ? 'text-white' : 'text-white/80'}`}>
-                        {candidate.full_name}
+                        {candidate.name}
                       </p>
                       <p className="text-[10px] text-white/30 truncate uppercase tracking-widest tracking-tighter">
                         {candidate.email}

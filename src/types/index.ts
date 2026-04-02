@@ -22,8 +22,7 @@ export interface JobRole {
 
 export interface Candidate {
   id: string;
-  job_role_id: string;
-  full_name: string;
+  name: string;
   email: string;
   phone: string;
   skills: string[];
@@ -43,14 +42,19 @@ export interface Candidate {
 export interface ShortlistedCandidate {
   id: string;
   candidate_id: string;
-  job_role_id: string;
+  job_id: string;
   score: number;
   match_percentage?: number;
   summary?: string;
   reason: string;
   strengths: string[];
+  weaknesses: string[];
   missing_skills?: string[];
   rank: number;
+  candidate_name?: string;
+  candidate_email?: string;
+  resume_text?: string;
+  local_score?: number;
   interview_questions?: InterviewQuestion[];
   email_status?: 'pending' | 'sent' | 'failed';
   created_at: string;

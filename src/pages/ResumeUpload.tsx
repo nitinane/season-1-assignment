@@ -124,8 +124,7 @@ export default function ResumeUpload() {
           // STEP 3: Analyzing (Database creation)
           updateFileStatus(fState.id, 'analyzing', 90);
           await candidateService.createCandidate({
-            job_role_id: selectedRole,
-            full_name: parsedData.full_name || fState.file.name.split('.')[0],
+            name: parsedData.name || fState.file.name.split('.')[0],
             email: parsedData.email || 'unknown@example.com',
             phone: parsedData.phone || '',
             skills: parsedData.skills || [],

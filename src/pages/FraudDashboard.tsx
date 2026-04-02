@@ -93,7 +93,7 @@ export default function FraudDashboard() {
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-white font-medium truncate max-w-[150px]">
-                    {flag.candidates?.full_name || 'Unknown Candidate'}
+                    {flag.candidates?.name || 'Unknown Candidate'}
                   </h4>
                   <p className="text-xs text-white/40 truncate max-w-[150px]">{flag.candidates?.email}</p>
                 </div>

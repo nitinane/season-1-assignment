@@ -19,10 +19,10 @@ export default function RankingView() {
     jobRoleService.getRoles().then(setRoles).catch(console.error);
   }, []);
 
-  const fetchCandidates = async (roleId: string) => {
+  const fetchCandidates = async (_roleId: string) => {
     setLoading(true);
     try {
-      const data = await candidateService.getCandidatesByRole(roleId);
+      const data = await candidateService.getCandidates();
       setCandidates(data);
     } catch (error) {
       toast.error('Failed to fetch candidates');
@@ -45,7 +45,7 @@ export default function RankingView() {
     try {
       const role = roles.find(r => r.id === selectedRole);
       const scores = await bulkScoreCandidates(candidates.map(c => ({
-        name: c.full_name,
+        name: c.name,
         email: c.email,
         phone: c.phone,
         rawText: c.raw_text,
@@ -135,10 +135,10 @@ export default function RankingView() {
                   <div className="flex items-start justify-between">
                     <div className="flex gap-4">
                       <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-brand-400/20 to-brand-400/5 flex items-center justify-center text-brand-400 font-bold border border-brand-400/10">
-                        {candidate.full_name.charAt(0)}
+                        {candidate.name.charAt(0)}
                       </div>
                       <div className="space-y-1">
-                        <h4 className="text-white font-medium group-hover:text-brand-300 transition-colors">{candidate.full_name}</h4>
+                        <h4 className="text-white font-medium group-hover:text-brand-300 transition-colors">{candidate.name}</h4>
                         <p className="text-xs text-white/40">{candidate.email}</p>
                         <div className="flex flex-wrap gap-2 mt-3">
                           {candidate.skills.slice(0, 5).map((skill, j) => (

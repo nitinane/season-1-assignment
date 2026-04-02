@@ -1,0 +1,25 @@
+
+> hireflow-ai@0.0.0 build
+> tsc -b && vite build
+
+src/pages/Candidates.tsx(59,3): error TS2322: Type '{ id: any; candidate_id: any; job_id: string; rank: number; name: any; email: any; score: any; localScore: any; reason: string; summary: any; strengths: string[]; weaknesses: never[]; candidate: any; email_status: "pending"; }[]' is not assignable to type 'ShortlistedCandidate[]'.
+  Type '{ id: any; candidate_id: any; job_id: string; rank: number; name: any; email: any; score: any; localScore: any; reason: string; summary: any; strengths: string[]; weaknesses: never[]; candidate: any; email_status: "pending"; }' is missing the following properties from type 'ShortlistedCandidate': job_role_id, created_at
+src/pages/Candidates.tsx(243,70): error TS2339: Property 'name' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(244,20): error TS2339: Property 'duplicate_flag' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(249,20): error TS2339: Property 'fraud_flag' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(249,40): error TS2339: Property 'fraud_flag' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(250,77): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ low: string; medium: string; high: string; }'.
+src/pages/Candidates.tsx(250,93): error TS2339: Property 'fraud_flag' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(252,24): error TS2339: Property 'fraud_flag' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(252,78): error TS2339: Property 'fraud_flag' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(260,20): error TS2339: Property 'email' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(260,42): error TS2339: Property 'email' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(311,34): error TS2339: Property 'weaknesses' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(313,38): error TS2339: Property 'weaknesses' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(542,13): error TS2353: Object literal may only specify known properties, and 'job_id' does not exist in type 'Candidate'.
+src/pages/Candidates.tsx(584,12): error TS2322: Type '{ id: `${string}-${string}-${string}-${string}-${string}`; candidate_id: `${string}-${string}-${string}-${string}-${string}`; job_id: string; name: string; email: string; score: number; rank: number; strengths: string[]; weaknesses: string[]; ... 4 more ...; email_status: "pending"; }[]' is not assignable to type 'ShortlistedCandidate[]'.
+  Type '{ id: `${string}-${string}-${string}-${string}-${string}`; candidate_id: `${string}-${string}-${string}-${string}-${string}`; job_id: string; name: string; email: string; score: number; rank: number; strengths: string[]; weaknesses: string[]; ... 4 more ...; email_status: "pending"; }' is missing the following properties from type 'ShortlistedCandidate': job_role_id, created_at
+src/pages/Candidates.tsx(637,38): error TS2339: Property 'job_id' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(640,46): error TS2339: Property 'name' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(641,47): error TS2339: Property 'email' does not exist on type 'ShortlistedCandidate'.
+src/pages/Candidates.tsx(644,42): error TS2339: Property 'weaknesses' does not exist on type 'ShortlistedCandidate'.
