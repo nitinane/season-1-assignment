@@ -209,32 +209,39 @@ export async function extractResumeData(rawText: string): Promise<Partial<Candid
           role: 'system',
           content: `Extract structured data from this resume. Return a valid JSON object with these exact fields:
 {
-  "name": "string or null",
-  "email": "string or null",
-  "phone": "string or null",
+  "name": "string",
+  "email": "string",
+  "phone": "string",
+  "summary": "2-3 sentence professional summary",
+  "score": 0,
   "skills": ["array of skill strings"],
   "projects": ["array of project description strings"],
-  "years_experience": number,
+  "years_experience": "string (e.g. '5+ years')",
+  "raw_text": "the full original resume text",
   "education": "highest education string",
   "certifications": ["array of certification strings"],
   "companies": ["array of previous company name strings"],
   "tech_stack": ["array of specific technology strings"],
   "keywords": ["array of important keywords"]
 }
-Be thorough. Extract as much data as possible. Return ONLY valid JSON.`,
+Be thorough. Extract as much data as possible. Fill raw_text with the input text provided. Return ONLY valid JSON.`,
         },
-        { role: 'user', content: rawText.slice(0, 6000) },
+        { role: 'user', content: rawText },
       ],
       temperature: 0.1,
-      max_tokens: 2000,
+      max_tokens: 3000,
       response_format: { type: 'json_object' },
     });
 
     try {
       const content = completion.choices[0].message.content || '{}';
-      return JSON.parse(content);
+      const parsed = JSON.parse(content);
+      return {
+        ...parsed,
+        raw_text: rawText // Ensure raw_text is always preserved
+      };
     } catch {
-      return {};
+      return { raw_text: rawText };
     }
   });
 }

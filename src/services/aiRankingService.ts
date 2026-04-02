@@ -104,20 +104,21 @@ export const aiRankingService = {
       .eq('hr_user_id', hr_user_id);
 
     // 6. Save top 10 results
-    const resultsToSave = aiResults.map(res => {
+    const resultsToSave = aiResults.map((res, index) => {
       const originalCandidate = allCandidates.find(c => c.name === res.name || c.email === res.email);
       return {
         hr_user_id,
         job_id: jobId,
         candidate_id: originalCandidate?.id,
-        score: Math.round(res.score),
-        rank: res.rank,
-        candidate_name: res.name,
-        candidate_email: res.email,
+        candidate_name: originalCandidate?.name || res.name,
+        candidate_email: originalCandidate?.email || res.email,
+        score: res.score,
+        rank: index + 1,
+        resume_text: originalCandidate?.raw_text || res.summary,
         reason: res.reason,
-        strengths: res.strengths,
-        weaknesses: res.weaknesses || [],
-        resume_text: res.summary || originalCandidate?.raw_text?.slice(0, 1000)
+        strengths: originalCandidate?.skills || res.strengths,
+        weaknesses: originalCandidate?.missing_skills || res.weaknesses || [],
+        local_score: res.score,
       };
     });
 

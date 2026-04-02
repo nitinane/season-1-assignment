@@ -262,9 +262,21 @@ export default function ShortlistView() {
                              <p className="text-lg text-white font-medium italic leading-relaxed">
                                "{candidateEntry.reason || "The AI evaluates this candidate as a high-potential fit based on depth of experience and technical alignment."}"
                              </p>
-                             {candidateEntry.summary && (
-                               <p className="text-sm text-white/40 leading-relaxed max-w-3xl">
-                                 {candidateEntry.summary}
+                             
+                             <div className="flex flex-wrap items-center gap-4 pt-4 mt-2 border-t border-white/5">
+                               <div className="px-4 py-2 rounded-2xl bg-brand-400/5 border border-brand-400/20 flex flex-col">
+                                 <span className="text-[10px] font-bold text-brand-400 uppercase tracking-tighter">Experience</span>
+                                 <span className="text-sm font-black text-white">{candidateEntry.candidate?.years_experience || '3+ Years'}</span>
+                               </div>
+                               <div className="px-4 py-2 rounded-2xl bg-blue-400/5 border border-blue-400/20 flex flex-col">
+                                 <span className="text-[10px] font-bold text-blue-400 uppercase tracking-tighter">Education</span>
+                                 <span className="text-sm font-black text-white">{candidateEntry.candidate?.education || 'Degree Holder'}</span>
+                               </div>
+                             </div>
+
+                             {candidateEntry.candidate?.summary && (
+                               <p className="text-sm text-white/60 leading-relaxed max-w-3xl pt-2">
+                                 {candidateEntry.candidate.summary}
                                </p>
                              )}
                           </div>

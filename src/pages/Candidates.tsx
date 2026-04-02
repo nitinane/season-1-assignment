@@ -239,7 +239,7 @@ function CandidateCard({
           <div className="flex flex-wrap gap-3 text-xs text-white/40">
             {candidate?.email && <span>{candidate.email}</span>}
             {candidate?.phone && <span>{candidate.phone}</span>}
-            {candidate?.years_experience > 0 && <span>{candidate.years_experience}yr exp</span>}
+            {candidate?.years_experience && <span>{candidate.years_experience} exp</span>}
           </div>
         </div>
 
@@ -522,9 +522,11 @@ export default function Candidates() {
             name: discoveredName,
             email: senderEmail,
             phone: '',
+            score: 0,
+            summary: '',
             skills: [],
             projects: [],
-            years_experience: 0,
+            years_experience: '',
             education: '',
             certifications: [],
             companies: [],
@@ -532,6 +534,7 @@ export default function Candidates() {
             keywords: [],
             raw_text: rawText,
             received_at: new Date().toISOString(),
+             hr_user_id: '',
             created_at: new Date().toISOString(),
          };
 

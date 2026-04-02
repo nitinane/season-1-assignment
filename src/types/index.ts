@@ -25,9 +25,11 @@ export interface Candidate {
   name: string;
   email: string;
   phone: string;
+  score: number;
+  summary: string;
   skills: string[];
   projects: string[];
-  years_experience: number;
+  years_experience: string;
   education: string;
   certifications: string[];
   companies: string[];
@@ -36,6 +38,7 @@ export interface Candidate {
   raw_text: string;
   resume_url?: string;
   received_at: string;
+  hr_user_id: string;
   created_at: string;
 }
 

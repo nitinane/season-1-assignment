@@ -28,12 +28,14 @@ export const candidateService = {
    * Inserts a new candidate into the database.
    */
   async createCandidate(candidate: Omit<Candidate, 'id' | 'created_at'>) {
-    // Ensure the candidate is only created if it belongs to a job role owned by the current HR user
-    // This is also enforced via RLS, but we can do a sanity check if needed.
+    const hr_user_id = await getCurrentUser();
     
     const { data, error } = await supabase
       .from('candidates')
-      .insert([candidate])
+      .insert([{
+        ...candidate,
+        hr_user_id
+      }])
       .select()
       .single();
 
